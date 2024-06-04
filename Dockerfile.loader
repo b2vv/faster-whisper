@@ -1,0 +1,10 @@
+# Використання офіційного образу Python
+FROM python:3.9
+
+# Встановлення залежностей
+RUN pip install --no-cache-dir faster-whisper
+
+# Створення робочої директорії
+WORKDIR /app
+
+COPY ./load_models.py .
