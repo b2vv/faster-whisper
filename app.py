@@ -10,11 +10,11 @@ CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 # Шлях до попередньо завантаженої моделі
-model_name = os.environ.get('MODEL_NAME', "small")
+model_name = os.environ.get('MODEL_NAME', "base")
 model_path = f"./models/{model_name}"
 
 # Завантаження моделі Faster Whisper з float32
-model = WhisperModel(model_path, compute_type="float32")
+model = WhisperModel(model_path, device="cuda", compute_type="float32")
 
 @app.route('/process', methods=['POST'])
 def process_audio():
@@ -39,6 +39,13 @@ def process_audio():
             'duration': info.duration
         }
     }
+
+    # Save the result to a file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    result_filename = f"./transcriptions/{audio_file.filename}_transcription_{timestamp}.json"
+    os.makedirs(os.path.dirname(result_filename), exist_ok=True)
+    with open(result_filename, 'w') as f:
+        json.dump(result, f, ensure_ascii=False, indent=4)
 
     # Видалення тимчасового файлу
     os.remove(audio_path)

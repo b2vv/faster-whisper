@@ -15,7 +15,7 @@ def setup_logging():
 
 def main():
     model_dir = "./models"
-    model_name = os.environ.get('MODEL_NAME', "small")
+    model_name = os.environ.get('MODEL_NAME', "base")
     path = f"./{model_dir}/{model_name}"
 
     # Ensure logging is set up

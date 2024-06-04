@@ -1,8 +1,17 @@
-# Використання офіційного образу Python
-FROM python:3.9
+FROM nvidia/cuda:11.4.2-cudnn8-runtime-ubuntu20.04
 
-# Встановлення залежностей
-RUN pip install --no-cache-dir faster-whisper
+# Install Python and other dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Встановлення Python залежностей
+RUN pip3 install --no-cache-dir \
+    faster-whisper \
+    logging \
+    flask \
+    flask-cors \
+    gunicorn
 
 # Створення робочої директорії
 WORKDIR /app
