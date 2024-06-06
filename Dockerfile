@@ -19,4 +19,4 @@ RUN  sleep 2m
 EXPOSE 5000
 
 # Запуск Gunicorn сервера
-CMD ["gunicorn", "--workers", "2", "--threads", "4", "--timeout", "600", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--workers", "2", "--threads", "4", "--timeout", "3000", "--bind", "0.0.0.0:5000", "app:app"]
