@@ -13,7 +13,7 @@ WORKDIR /app
 # Копіювання всього коду до контейнера
 COPY . /app
 
-RUN  #sleep 2m
+RUN  sleep 2m
 
 # Відкриття порту 5000
 EXPOSE 5000
