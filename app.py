@@ -6,7 +6,8 @@ from pymongo import MongoClient
 import time
 import json
 from datetime import datetime
-
+import subprocess
+from flask_cors import CORS
 
 # Встановлення logging
 def setup_logging():
@@ -22,6 +23,7 @@ def setup_logging():
 setup_logging()
 
 app = Flask(__name__)
+CORS(app)  # Додає підтримку CORS для всіх маршрутів
 
 # Максимальний розмір файлів 50MB
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
@@ -30,14 +32,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 client = MongoClient('mongodb://mongo:27017/')
 db = client['transcriptions_db']
 collection = db['transcriptions']
-
-# Шлях до попередньо завантаженої моделі
-model_name = os.environ.get('MODEL_NAME', "small")
-model_path = f"./models/{model_name}"
-
-# Завантаження моделі Faster Whisper з float32
-model = WhisperModel(model_path, compute_type="float32")
-
+collectionFiles = db['not_processed']
 
 @app.route('/process', methods=['POST'])
 def process_audio():
@@ -48,43 +43,17 @@ def process_audio():
     audio_path = f"./uploads/{audio_file.filename}"
     audio_file.save(audio_path)
 
-    # Обробка аудіо файлу
-    segments, info = model.transcribe(audio_path)
-
-    # Форматування результатів
     result = {
-        'segments': [
-            {'start': seg.start, 'end': seg.end, 'text': seg.text}
-            for seg in segments
-        ],
-        'info': {
-            'language': info.language,
-            'duration': info.duration
-        },
-        'file-name': audio_file.filename,
-        'time': int(time.time())
+        'fileName': audio_file.filename,
+        'status': 'not_processed',
+        'created': int(time.time()),
+        'edited': int(time.time())
     }
 
     # Збереження до MongoDB
-    collection.insert_one(result)
+    collectionFiles.insert_one(result)
 
-    # Видалення поля ObjectId
-    result.pop('_id', None)
-
-    # Збереження до файлу
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    result_filename = f"./transcriptions/{audio_file.filename}_transcription_{timestamp}.json"
-    os.makedirs(os.path.dirname(result_filename), exist_ok=True)
-
-    fileText = "\n".join(seg['text'] for seg in result['segments'])
-
-    with open(result_filename, 'w') as f:
-        f.write(fileText)
-
-    # Видалення тимчасового файлу
-    os.remove(audio_path)
-
-    return jsonify(result)
+    return jsonify({'message': 'file save'})
 
 
 @app.route('/search', methods=['GET'])
@@ -112,6 +81,19 @@ def search_transcriptions():
         'list': matching_transcriptions,
         'count': count
     })
+
+@app.route('/files', methods=['GET'])
+def fetch_files():
+    try:
+        records = collectionFiles.find()
+        files_list = []
+        for record in records:
+            record.pop('_id', None)
+            files_list.append(record)
+        return jsonify(files_list), 200
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 
 if __name__ == '__main__':
